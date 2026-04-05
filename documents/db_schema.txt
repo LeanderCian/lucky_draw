@@ -1,0 +1,50 @@
+       table:
+        * campaign
+            * Id (long)
+            * name (string)
+            * status (int)
+                * 0 - inactive
+                * 1 - active
+            * max_tries (int)
+            * start_time (datetime)
+            * end_time (datetime)
+            * created_at (datetime)
+            * updated_at (datetime)
+        * item
+            * id (long)
+            * campaign_id (long)
+            * name(string)
+            * status (int)
+                * 0 - inactive
+                * 1 - active
+            * probability (int) - with micro, ex: 1,000,000 means 1%
+            * total_stock (long)
+            * current_stock (long)
+            * created_at (datetime)
+            * updated_at (datetime)
+        * user
+            * id (long)
+            * name (string)
+            * status (int)
+                * 0 - inactive
+                * 1 - active
+            * role (int)
+                * 1 - general user
+                * 2 - admin
+            * password (string) : hashing with BCrypt
+            * email (string)
+            * created_at (datetime)
+            * updated_at (datetime)
+        * campaign_user_mapping
+            * campaign_id (long)
+            * user_id (long)
+            * total_lottery_count(int)
+            * remaining_lottery_count (int)
+            * created_at (datetime)
+            * updated_at (datetime)
+        * lottery_result
+            * Id (long)
+            * user_id (long)
+            * campaign_id (long)
+            * item_id (long)
+            * created_at (datetime)
