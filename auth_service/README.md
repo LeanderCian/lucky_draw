@@ -39,6 +39,11 @@ How to run:
 1. local run : mvn spring-boot:run
 2. run test case : mvn clean test
 
+To do:
+1. add test case
+   1. AuthServiceImpl
+   2. JwtUtils
+
 Note:
 在CI或CD使用對應環境的config
 1. 開發環境 - application_dev.properties
