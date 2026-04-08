@@ -1,6 +1,6 @@
 # lucky_draw
 
-projects
+Projects:
 1. documents
    1. data flow
    2. DB schema
@@ -8,3 +8,5 @@ projects
 3. admin service
 4. lottery service
 5. record worker
+
+note: please review data flow (lottery_data_flow.png) first.
