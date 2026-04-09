@@ -1,6 +1,7 @@
 package com.leander.lottery.admin.controller;
 
 import com.leander.lottery.admin.dto.*;
+import com.leander.lottery.admin.exception.ResourceNotFoundException;
 import com.leander.lottery.admin.model.enums.*;
 import com.leander.lottery.admin.service.AuthService;
 import com.leander.lottery.admin.service.CampaignService;
@@ -26,7 +27,7 @@ public class CampaignController {
 
     // 建立活動
     @PostMapping
-    public ResponseEntity<?> register(
+    public ResponseEntity<?> createCampagin(
             @RequestHeader(value = "Authorization") String token,
             @Valid @RequestBody CreateCampaignRequest req) {
         // 狀態是否有定義
@@ -54,7 +55,36 @@ public class CampaignController {
         try {
             Long campaignId = campaignService.createCampaign(req);
             return ResponseEntity.ok(Map.of("id", campaignId));
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An internal server error occurred. Please contact the system administrator.");
+        }
+    }
+
+    // 查詢活動
+    @GetMapping("/{campaign_id}")
+    public ResponseEntity<?> getCampaign(
+            @RequestHeader("Authorization") String token,
+            @PathVariable("campaign_id") Long campaignId) {
+
+        // 檢查 Token 有效性
+        if (!authService.isTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non-existent token or token out of date");
+        }
+
+        // 檢查是否有管理員權限
+        if (!authService.isAdmin(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("not admin role");
+        }
+
+        // 取得活動資料
+        try {
+            CampaignResponse response = campaignService.getCampaignById(campaignId);
+            return ResponseEntity.ok(response);
+        } catch(ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An internal server error occurred. Please contact the system administrator.");
         }
