@@ -16,7 +16,6 @@ public enum UserRole {
 
     // 根據數字尋找對應的 Enum
     public static UserRole fromValue(Integer value) {
-        if (value == null) return GENERAL_USER; // 預設值
         for (UserRole role : UserRole.values()) {
             if (role.value == value) {
                 return role;

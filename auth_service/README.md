@@ -1,7 +1,7 @@
 # auth service
 
 目的:
-1. 建立使用者
+1. 管理使用者
 2. 使用者的認證與授權
 
 API Spec:
@@ -33,7 +33,8 @@ API Spec:
       2. password (string)
    4. response :
       1. login success : Http code 200 & return {"Authorization":"{authorization_string}"}
-      2. login failed : Http code 401
+      2. missing required parameters : Http code 400
+      3. login failed : Http code 401
 
 How to run:
 1. local run : mvn spring-boot:run
@@ -43,6 +44,7 @@ To do:
 1. add test case
    1. AuthServiceImpl
    2. JwtUtils
+2. put AuthService & JwtUtils to common library for other services used
 
 Note:
 在CI或CD使用對應環境的config

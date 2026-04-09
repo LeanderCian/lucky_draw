@@ -24,9 +24,9 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(
             @RequestHeader(value = "Authorization", required = false) String token,
-            @Valid @RequestBody RegisterRequest regRequest) {
+            @Valid @RequestBody RegisterRequest req) {
         // 檢查 Role 是否存在
-        UserRole targetRole = UserRole.fromValue(regRequest.getRole());
+        UserRole targetRole = UserRole.fromValue(req.getRole());
         if (targetRole == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Non-existent role");
         }
@@ -49,7 +49,7 @@ public class AuthController {
 
         // 執行註冊邏輯
         try {
-            authService.registerUser(regRequest);
+            authService.registerUser(req);
             return ResponseEntity.ok().build();
         } catch (DuplicateUserException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Duplicate username or email");
@@ -61,11 +61,11 @@ public class AuthController {
 
     // 登入
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
         // 呼叫 Service 進行驗證並取得 Token
         String token = authService.authenticate(
-                loginRequest.getName(),
-                loginRequest.getPassword()
+                req.getName(),
+                req.getPassword()
         );
 
         if (token != null) {
