@@ -1,0 +1,29 @@
+package com.leander.lottery.admin.dto;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.leander.lottery.admin.entity.Campaign;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class CampaignResponse {
+    private Long id;
+    private String name;
+    private Integer status;
+    @JsonProperty("max_tries")
+    private Integer maxTries;
+    @JsonProperty("start_time")
+    private Long startTime;
+    @JsonProperty("end_time")
+    private Long endTime;
+
+    public CampaignResponse(Campaign c) {
+        this.id = c.getId();
+        this.name = c.getName();
+        this.status = c.getStatus();
+        this.maxTries = c.getMaxTries();
+        this.startTime = c.getStartTime();
+        this.endTime = c.getEndTime();
+    }
+}
