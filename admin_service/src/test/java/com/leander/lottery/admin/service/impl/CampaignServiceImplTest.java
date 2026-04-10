@@ -1,0 +1,81 @@
+package com.leander.lottery.admin.service.impl;
+
+import com.leander.lottery.admin.dto.CreateCampaignRequest;
+import com.leander.lottery.admin.entity.Campaign;
+import com.leander.lottery.admin.repository.CampaignRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class CampaignServiceImplTest {
+
+    @Mock
+    private CampaignRepository campaignRepository;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
+
+    @InjectMocks
+    @Spy // 使用 Spy 是為了能部分模擬 Service 內的方法（如 syncItemToRedis）
+    private CampaignServiceImpl campaignService;
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(campaignService, "campaignKeyPrefix", "campaign_");
+    }
+
+    @Test
+    void shouldCreateCampaignSuccessfully() {
+        // 1. 準備測試數據
+        CreateCampaignRequest input = new CreateCampaignRequest();
+        input.setName("test");
+        input.setMaxTries(50);
+        input.setStartTime(1000L);
+        input.setEndTime(2000L);
+
+        Campaign saved = new Campaign();
+        saved.setId(777L);
+        saved.setName(input.getName());
+        saved.setMaxTries(input.getMaxTries());
+        saved.setStartTime(input.getStartTime());
+        saved.setEndTime(input.getEndTime());
+
+        // 2. 設定 Mock 行為
+        // 模擬 Repository 儲存後回傳帶有 ID 的物件
+        when(campaignRepository.save(any(Campaign.class))).thenReturn(saved);
+
+        // 模擬 Redis 的操作類別 (因為 RedisTemplate 是鏈式呼叫，需要 Mock 內層操作)
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        // 3. 執行測試
+        Long result = campaignService.createCampaign(input);
+
+        // 4. 驗證結果
+        assertNotNull(result);
+
+        // 5. 驗證互動
+        // 確認資料庫有存檔
+        verify(campaignRepository, times(1)).save(any(Campaign.class));
+
+        // 確認 Redis 庫存有寫入 (opsForValue().set)
+        verify(valueOperations, times(1)).set(
+                eq("campaign_777"),
+                any(Campaign.class)
+        );
+    }
+}

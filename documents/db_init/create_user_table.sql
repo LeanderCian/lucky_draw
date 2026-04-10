@@ -1,7 +1,6 @@
 CREATE TABLE IF NOT EXISTS `user` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '唯一識別碼',
     `name` VARCHAR(255) NOT NULL UNIQUE COMMENT '使用者名稱',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0: inactive, 1: active',
     `role` TINYINT NOT NULL DEFAULT 1 COMMENT '1: general user, 2: admin',
     `password` VARCHAR(72) NOT NULL COMMENT '使用者密碼',
     `email` VARCHAR(255) NOT NULL UNIQUE COMMENT '電子郵件',

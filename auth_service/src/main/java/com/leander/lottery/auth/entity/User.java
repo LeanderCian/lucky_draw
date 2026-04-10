@@ -19,9 +19,6 @@ public class User {
     private String name;
 
     @Column(nullable = false)
-    private Integer status = 0; // 0: inactive, 1: active
-
-    @Column(nullable = false)
     private Integer role = 1; // 1: general user, 2: admin
 
     @Column(nullable = false, length = 72)

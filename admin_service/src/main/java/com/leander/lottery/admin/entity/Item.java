@@ -1,5 +1,6 @@
-package com.leander.lottery.auth.entity;
+package com.leander.lottery.admin.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,27 +10,32 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "user")
-public class User {
+@Table(name = "item")
+public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
+    private Long campaignId;
+
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)
-    private Integer role = 1; // 1: general user, 2: admin
+    private Integer probability;
 
-    @Column(nullable = false, length = 72)
-    private String password;
+    @Column(name = "total_stock", nullable = false)
+    private Long totalStock;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+    @Column(name = "current_stock", nullable = false)
+    private Long currentStock;
 
+    @JsonIgnore
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @JsonIgnore
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

@@ -1,5 +1,6 @@
 package com.leander.lottery.admin.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,9 +19,6 @@ public class Campaign {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private Integer status; // 0: inactive, 1: active
-
     @Column(name = "max_tries", nullable = false)
     private Integer maxTries;
 
@@ -30,9 +28,11 @@ public class Campaign {
     @Column(name = "end_time", nullable = false)
     private Long endTime;
 
+    @JsonIgnore
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @JsonIgnore
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

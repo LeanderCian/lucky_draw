@@ -54,6 +54,7 @@ public class AuthController {
         } catch (DuplicateUserException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Duplicate username or email");
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An internal server error occurred. Please contact the system administrator.");
         }

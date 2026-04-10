@@ -45,6 +45,7 @@ To do:
    1. AuthServiceImpl
    2. JwtUtils
 2. put AuthService & JwtUtils to common library for other services used
+3. user need status column
 
 Note:
 在CI或CD使用對應環境的config

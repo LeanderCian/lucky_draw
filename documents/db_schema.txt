@@ -2,9 +2,6 @@
         * campaign
             * Id (long)
             * name (string)
-            * status (int)
-                * 0 - inactive
-                * 1 - active
             * max_tries (int)
             * start_time (datetime)
             * end_time (datetime)
@@ -14,9 +11,6 @@
             * id (long)
             * campaign_id (long)
             * name(string)
-            * status (int)
-                * 0 - inactive
-                * 1 - active
             * probability (int) - with micro, ex: 1,000,000 means 1%
             * total_stock (long)
             * current_stock (long)
@@ -25,9 +19,6 @@
         * user
             * id (long)
             * name (string)
-            * status (int)
-                * 0 - inactive
-                * 1 - active
             * role (int)
                 * 1 - general user
                 * 2 - admin
@@ -47,4 +38,5 @@
             * user_id (long)
             * campaign_id (long)
             * item_id (long)
+            * no_item (boolean) : 是否為銘謝惠顧, 若為銘謝惠顧, 則item_id為null
             * created_at (datetime)

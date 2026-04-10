@@ -1,8 +1,10 @@
 package com.leander.lottery.admin.controller;
 
-import com.leander.lottery.admin.dto.CreateCampaignRequest;
+import com.leander.lottery.admin.dto.CreateItemRequest;
+import com.leander.lottery.admin.exception.ProbabilityExceededException;
+import com.leander.lottery.admin.exception.ResourceNotFoundException;
 import com.leander.lottery.admin.service.AuthService;
-import com.leander.lottery.admin.service.CampaignService;
+import com.leander.lottery.admin.service.ItemService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,17 +17,19 @@ import tools.jackson.databind.ObjectMapper;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-public class CampaignControllerCreateCampaignTest {
+public class ItemControllerCreateItemTest {
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private CampaignService campaignService;
+    private ItemService itemService;
 
     @MockitoBean
     private AuthService authService;
@@ -33,26 +37,26 @@ public class CampaignControllerCreateCampaignTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private CreateCampaignRequest req;
+    private CreateItemRequest req;
 
     private final String adminToken = "admin-token";
 
     @BeforeEach
     void setUp() {
-        req = new CreateCampaignRequest();
+        req = new CreateItemRequest();
+        req.setCampaignId(111L);
         req.setName("test");
-        req.setMaxTries(10);
-        req.setStartTime(1000L);
-        req.setEndTime(2000L);
+        req.setProbability(10000000);
+        req.setTotalStock(10L);
     }
 
     @Test
     void createSuccess() throws Exception {
-        when(campaignService.createCampaign(any())).thenReturn(100L);
+        when(itemService.createItem(any())).thenReturn(100L);
         when(authService.isTokenValid(any())).thenReturn(true);
         when(authService.isAdmin(any())).thenReturn(true);
 
-        mockMvc.perform(post("/api/v1/admin/campaign")
+        mockMvc.perform(post("/api/v1/admin/item")
                         .header("Authorization", adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -63,50 +67,50 @@ public class CampaignControllerCreateCampaignTest {
     @Test
     void missingParameters() throws Exception {
         // Missing Token
-        mockMvc.perform(post("/api/v1/admin/campaign")
+        mockMvc.perform(post("/api/v1/admin/item")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
 
-        // Missing Name
-        CreateCampaignRequest req1 = new CreateCampaignRequest();
-        req1.setMaxTries(10);
-        req1.setStartTime(1000L);
-        req1.setEndTime(2000L);
-        mockMvc.perform(post("/api/v1/admin/campaign")
+        // Missing Campaign Id
+        CreateItemRequest req1 = new CreateItemRequest();
+        req1.setName("test");
+        req1.setProbability(10000000);
+        req1.setTotalStock(10L);
+        mockMvc.perform(post("/api/v1/admin/item")
                         .header("Authorization", adminToken)
                         .content(objectMapper.writeValueAsString(req1))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
-        // Missing Max Tries
-        CreateCampaignRequest req2 = new CreateCampaignRequest();
-        req2.setName("test");
-        req2.setStartTime(1000L);
-        req2.setEndTime(2000L);
-        mockMvc.perform(post("/api/v1/admin/campaign")
+        // Missing Name
+        CreateItemRequest req2 = new CreateItemRequest();
+        req2.setCampaignId(111L);
+        req2.setProbability(10000000);
+        req2.setTotalStock(10L);
+        mockMvc.perform(post("/api/v1/admin/item")
                         .header("Authorization", adminToken)
                         .content(objectMapper.writeValueAsString(req2))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
-        // Missing Start Time
-        CreateCampaignRequest req3 = new CreateCampaignRequest();
+        // Missing Probability
+        CreateItemRequest req3 = new CreateItemRequest();
+        req3.setCampaignId(111L);
         req3.setName("test");
-        req3.setMaxTries(10);
-        req3.setEndTime(2000L);
-        mockMvc.perform(post("/api/v1/admin/campaign")
+        req3.setTotalStock(10L);
+        mockMvc.perform(post("/api/v1/admin/item")
                         .header("Authorization", adminToken)
                         .content(objectMapper.writeValueAsString(req3))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
-        // Missing End Time
-        CreateCampaignRequest req4 = new CreateCampaignRequest();
+        // Missing Total Stock
+        CreateItemRequest req4 = new CreateItemRequest();
+        req4.setCampaignId(111L);
         req4.setName("test");
-        req4.setMaxTries(10);
-        req4.setStartTime(1000L);
-        mockMvc.perform(post("/api/v1/admin/campaign")
+        req4.setProbability(10000000);
+        mockMvc.perform(post("/api/v1/admin/item")
                         .header("Authorization", adminToken)
                         .content(objectMapper.writeValueAsString(req4))
                         .contentType(MediaType.APPLICATION_JSON))
@@ -114,30 +118,37 @@ public class CampaignControllerCreateCampaignTest {
     }
 
     @Test
-    void maxTriesNegative() throws Exception {
-        req.setMaxTries(0);
+    void probabilityLessThanZero() throws Exception {
+        req.setProbability(-1);
 
-        mockMvc.perform(post("/api/v1/admin/campaign")
+        mockMvc.perform(post("/api/v1/admin/item")
                         .header("Authorization", adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
-
-        req.setMaxTries(-99);
-
-        mockMvc.perform(post("/api/v1/admin/campaign")
-                        .header("Authorization", adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void timeOrderError() throws Exception {
-        req.setStartTime(2000L);
-        req.setEndTime(1000L);
+    void probabilityOverHundred() throws Exception {
+        req.setProbability(90000000);
 
-        mockMvc.perform(post("/api/v1/admin/campaign")
+        when(authService.isTokenValid(any())).thenReturn(true);
+        when(authService.isAdmin(any())).thenReturn(true);
+        when(itemService.createItem(any()))
+                .thenThrow(new ProbabilityExceededException("probability exceeded"));
+
+        mockMvc.perform(post("/api/v1/admin/item")
+                        .header("Authorization", adminToken)
+                        .content(objectMapper.writeValueAsString(req))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void totalStockNegative() throws Exception {
+        req.setTotalStock(-1L);
+
+        mockMvc.perform(post("/api/v1/admin/item")
                         .header("Authorization", adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -148,7 +159,7 @@ public class CampaignControllerCreateCampaignTest {
     void unauthorized() throws Exception {
         when(authService.isTokenValid(any())).thenReturn(false);
 
-        mockMvc.perform(post("/api/v1/admin/campaign")
+        mockMvc.perform(post("/api/v1/admin/item")
                         .header("Authorization", "invalid-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -160,10 +171,23 @@ public class CampaignControllerCreateCampaignTest {
         when(authService.isTokenValid(any())).thenReturn(true);
         when(authService.isAdmin(any())).thenReturn(false);
 
-        mockMvc.perform(post("/api/v1/admin/campaign")
+        mockMvc.perform(post("/api/v1/admin/item")
                         .header("Authorization", "general-user-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
+    }
+
+    void campaignNotFound() throws Exception {
+        when(itemService.createItem(any()))
+                .thenThrow(new ResourceNotFoundException("no this campaign"));
+        when(authService.isTokenValid(any())).thenReturn(true);
+        when(authService.isAdmin(any())).thenReturn(true);
+
+        mockMvc.perform(post("/api/v1/admin/campaign")
+                        .header("Authorization", "general-user-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isNotFound());
     }
 }

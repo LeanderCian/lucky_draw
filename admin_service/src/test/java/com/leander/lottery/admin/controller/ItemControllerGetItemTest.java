@@ -1,11 +1,10 @@
 package com.leander.lottery.admin.controller;
 
-import com.leander.lottery.admin.dto.CampaignResponse;
-import com.leander.lottery.admin.dto.CreateCampaignRequest;
-import com.leander.lottery.admin.entity.Campaign;
+import com.leander.lottery.admin.dto.ItemResponse;
+import com.leander.lottery.admin.entity.Item;
 import com.leander.lottery.admin.exception.ResourceNotFoundException;
 import com.leander.lottery.admin.service.AuthService;
-import com.leander.lottery.admin.service.CampaignService;
+import com.leander.lottery.admin.service.ItemService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,18 +16,18 @@ import tools.jackson.databind.ObjectMapper;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-public class CampaignControllerGetCampaignTest {
+public class ItemControllerGetItemTest {
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private CampaignService campaignService;
+    private ItemService itemService;
 
     @MockitoBean
     private AuthService authService;
@@ -40,27 +39,29 @@ public class CampaignControllerGetCampaignTest {
 
     @Test
     void getSuccess() throws Exception {
-        Campaign c = new Campaign();
-        c.setId(111L);
-        c.setName("ca1111");
-        c.setMaxTries(11);
-        c.setStartTime(1000L);
-        c.setEndTime(2000L);
-        CampaignResponse res = new CampaignResponse(c);
+        Item i = new Item();
+        i.setId(111L);
+        i.setCampaignId(222L);
+        i.setName("test");
+        i.setProbability(100000000);
+        i.setTotalStock(1000L);
+        i.setCurrentStock(555L);
+        ItemResponse res = new ItemResponse(i);
 
-        when(campaignService.getCampaignById(any())).thenReturn(res);
+        when(itemService.getItemById(any())).thenReturn(res);
         when(authService.isTokenValid(any())).thenReturn(true);
         when(authService.isAdmin(any())).thenReturn(true);
 
-        mockMvc.perform(get("/api/v1/admin/campaign/111")
+        mockMvc.perform(get("/api/v1/admin/item/111")
                         .header("Authorization", adminToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(111L))
-                .andExpect(jsonPath("$.name").value("ca1111"))
-                .andExpect(jsonPath("$.max_tries").value(11))
-                .andExpect(jsonPath("$.start_time").value(1000L))
-                .andExpect(jsonPath("$.end_time").value(2000L));
+                .andExpect(jsonPath("$.campaign_id").value(222L))
+                .andExpect(jsonPath("$.name").value("test"))
+                .andExpect(jsonPath("$.probability").value(100000000))
+                .andExpect(jsonPath("$.total_stock").value(1000L))
+                .andExpect(jsonPath("$.current_stock").value(555L));
     }
 
     @Test
@@ -95,12 +96,12 @@ public class CampaignControllerGetCampaignTest {
     @Test
     void campaignNotFound() throws Exception {
         Long nonExistentId = 999L;
-        when(campaignService.getCampaignById(nonExistentId))
-                .thenThrow(new ResourceNotFoundException("no this campaign"));
+        when(itemService.getItemById(nonExistentId))
+                .thenThrow(new ResourceNotFoundException("no this item"));
         when(authService.isTokenValid(any())).thenReturn(true);
         when(authService.isAdmin(any())).thenReturn(true);
 
-        mockMvc.perform(get("/api/v1/admin/campaign/"+nonExistentId)
+        mockMvc.perform(get("/api/v1/admin/item/"+nonExistentId)
                         .header("Authorization", adminToken))
                 .andExpect(status().isNotFound());
     }

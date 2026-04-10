@@ -12,8 +12,6 @@ import lombok.Setter;
 public class CreateCampaignRequest {
     @NotBlank(message = "Name is required")
     private String name;
-    @NotNull(message = "Status is required")
-    private Integer status;
     @NotNull(message = "Max tries is required")
     @Min(1)
     @JsonProperty("max_tries")
