@@ -119,4 +119,33 @@ public class CampaignController {
                     .body("An internal server error occurred. Please contact the system administrator.");
         }
     }
+
+    // 取得使用者抽獎次數
+    @GetMapping("/{campaign_id}/user")
+    public ResponseEntity<?> setLotteryCount(
+            @RequestHeader(value = "Authorization") String token,
+            @PathVariable("campaign_id") Long campaignId) {
+        // 檢查 Token 有效性
+        if (!authService.isTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non-existent token or token out of date");
+        }
+
+        // 檢查是否有管理員權限
+        if (!authService.isAdmin(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("not admin role");
+        }
+
+        // 執行業務邏輯
+        try {
+            LotteryCountResponse res = lotteryCountService.getLotteryCount(campaignId);
+            return ResponseEntity.ok(res);
+        } catch(ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An internal server error occurred. Please contact the system administrator.");
+        }
+    }
 }

@@ -69,7 +69,7 @@ API Spec:
       2. method : GET
       3. header : Authorization (string, required)
       4. response :
-         1. get campaign_user_mapping success : Http code 200 & return {"campaign_id":{campaign_id}, "users":[{"id":{user_id}, "total_lottery_count":{total_lottery_count}, "remaining_lottery_count":{remaining_lottery_count}}, ...]}
+         1. get lottery_count success : Http code 200 & return {"campaign_id":{campaign_id}, "users":[{"id":{user_id}, "total_lottery_count":{total_lottery_count}, "remaining_lottery_count":{remaining_lottery_count}}, ...]}
          2. missing token : Http code 400
          3. non-existent token or token out of date : Http code 401
          4. not admin token : Http code 403

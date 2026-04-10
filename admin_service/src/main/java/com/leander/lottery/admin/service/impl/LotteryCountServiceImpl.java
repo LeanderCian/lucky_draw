@@ -1,5 +1,6 @@
 package com.leander.lottery.admin.service.impl;
 
+import com.leander.lottery.admin.dto.LotteryCountResponse;
 import com.leander.lottery.admin.entity.LotteryCount;
 import com.leander.lottery.admin.entity.LotteryCountId;
 import com.leander.lottery.admin.exception.ResourceNotFoundException;
@@ -12,6 +13,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class LotteryCountServiceImpl implements LotteryCountService {
@@ -66,5 +71,26 @@ public class LotteryCountServiceImpl implements LotteryCountService {
     private void syncLotteryCountToRedis(LotteryCount lotteryCount) {
         String lotteryCountKey = lotteryCountKeyPrefix + lotteryCount.getCampaignId() + "_" + lotteryCount.getUserId();
         redisTemplate.opsForValue().set(lotteryCountKey, lotteryCount.getRemainingLotteryCount());
+    }
+
+    public LotteryCountResponse getLotteryCount(Long campaignId) {
+        // 檢查活動是否存在
+        if (!campaignRepository.existsById(campaignId)) {
+            throw new ResourceNotFoundException("No this campaign");
+        }
+
+        // 查詢該活動下所有使用者的抽獎次數
+        ArrayList<LotteryCount> lotteryCounts = lotteryCountRepository.findByCampaignId(campaignId);
+
+        // 轉換為 DTO 格式
+        List<LotteryCountResponse.UserCount> userCounts = lotteryCounts.stream()
+                .map(c -> new LotteryCountResponse.UserCount(
+                        c.getUserId(),
+                        c.getTotalLotteryCount(),
+                        c.getRemainingLotteryCount()
+                ))
+                .collect(Collectors.toList());
+
+        return new LotteryCountResponse(campaignId, userCounts);
     }
 }
