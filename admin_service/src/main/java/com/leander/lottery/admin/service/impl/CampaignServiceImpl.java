@@ -42,7 +42,7 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Transactional
-    public void updateCampaign(Long campaignId, UpdateCampaignRequest req) {
+    public Campaign updateCampaign(Long campaignId, UpdateCampaignRequest req) {
         // find campaign from MySQL
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new ResourceNotFoundException("no this campaign"));
@@ -56,7 +56,10 @@ public class CampaignServiceImpl implements CampaignService {
         Campaign saved = campaignRepository.save(campaign);
 
         // 同步至 Redis
-        syncCampaignToRedis(saved);}
+        syncCampaignToRedis(saved);
+
+        return saved;
+    }
 
     private void syncCampaignToRedis(Campaign campaign) {
         String campaignKey = campaignKeyPrefix + campaign.getId();

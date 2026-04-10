@@ -89,28 +89,25 @@ API Spec:
          2. probability <=0, return Http code 400
          3. probability over 100%, return 422
          4. total stock <0, return Http code 400
-         4. total stock <0, return Http code 400
-         5. status not defined : Http code 400
-         6. missing required parameters or token: Http code 400
-         7. non-existent token or token out of date : Http code 401
-         8. not admin token : Http code 403
-         9. non-existent campaign id : Http code 404
+         5. missing required parameters or token: Http code 400
+         6. non-existent token or token out of date : Http code 401
+         7. not admin token : Http code 403
+         8. non-existent campaign id : Http code 404
    2. 修改獎品
       1. endpoint : /api/v1/admin/item/{item_id}
       2. method : PUT
       3. header : Authorization (string, required)
-      4. parameters : need one of following parameters
+      4. required parameters :
          1. name (string)
          2. probability (int) - with micro, ex: 1,000,000 means 1%
       5. response :
          1. modify item success : Http code 200
-         2. missing token : Http code 400
-         3. no any parameter : Http code 400
-         4. non-existent token or token out of date : Http code 401
-         5. not admin token : Http code 403
-         6. probability <= 0% : Http code 400
-         7. probability over 100% : Http code 422
-         8. non-existent item id : Http code 404
+         2. missing required parameters or token: Http code 400
+         3. non-existent token or token out of date : Http code 401
+         4. not admin token : Http code 403
+         5. probability <= 0% : Http code 400
+         6. probability over 100% : Http code 422
+         7. non-existent item id : Http code 404
    3. 補充庫存
       1. endpoint : /api/v1/admin/item/{item_id}
       2. method : PATCH

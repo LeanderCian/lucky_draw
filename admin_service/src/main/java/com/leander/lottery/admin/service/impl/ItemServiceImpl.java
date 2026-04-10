@@ -60,12 +60,36 @@ public class ItemServiceImpl implements ItemService {
         Item saved = itemRepository.save(item);
 
         // 同步至 Redis
-        insertItemToRedis(saved);
+        syncItemToRedis(saved);
 
         return saved.getId();
     }
 
-    private void insertItemToRedis(Item item) {
+    @Transactional
+    public Item updateItem(Long itemId, UpdateItemRequest req) {
+        // find item from MySQL
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("no this item"));
+
+        // 檢查總機率是否超過 100%
+        int totalProbability = itemRepository.sumProbabilityByCampaignId(item.getCampaignId());
+        if (totalProbability - item.getProbability() + req.getProbability() > 100000000) {
+            throw new ProbabilityExceededException("probability exceeded");
+        }
+
+        // 寫入 MySQL
+        item.setName(req.getName());
+        item.setProbability(req.getProbability());
+
+        Item saved = itemRepository.save(item);
+
+        // 同步至 Redis
+        syncItemToRedis(saved);
+
+        return saved;
+    }
+
+    private void syncItemToRedis(Item item) {
         String campaignItemListKey = campaignItemListKeyPrefix + item.getCampaignId();
         String itemStockKey = itemStockKeyPrefix + item.getId();
         String itemHashKey = item.getId().toString();

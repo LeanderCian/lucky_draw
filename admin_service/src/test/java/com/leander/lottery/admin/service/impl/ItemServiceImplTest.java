@@ -1,6 +1,7 @@
 package com.leander.lottery.admin.service.impl;
 
 import com.leander.lottery.admin.dto.CreateItemRequest;
+import com.leander.lottery.admin.dto.UpdateItemRequest;
 import com.leander.lottery.admin.entity.Campaign;
 import com.leander.lottery.admin.entity.Item;
 import com.leander.lottery.admin.exception.ProbabilityExceededException;
@@ -21,6 +22,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -81,7 +83,7 @@ public class ItemServiceImplTest {
     }
 
     @Test
-    void probabilityFull() {
+    void createItemWithProbabilityFull() {
         // 1. 準備數據
         Long campaignId = 111L;
         CreateItemRequest input = new CreateItemRequest();
@@ -114,7 +116,7 @@ public class ItemServiceImplTest {
     }
 
     @Test
-    void probabilityExceeded() {
+    void createItemWithProbabilityExceeded() {
         // 1. 準備數據
         Long campaignId = 1L;
 
@@ -141,6 +143,131 @@ public class ItemServiceImplTest {
         assertEquals("probability exceeded", exception.getMessage());
 
         // 6. 驗證防護機制：因為機率爆了，save 方法「不應該」被呼叫
+        verify(itemRepository, never()).save(any(Item.class));
+    }
+
+    @Test
+    void shouldUpdateItemSuccessfully() {
+        // 1. 準備測試數據
+        Long itemId = 123L;
+        Long campaignId = 456L;
+        UpdateItemRequest input = new UpdateItemRequest();
+        input.setName("test");
+        input.setProbability(15000000);
+
+        Item oldItem = new Item();
+        oldItem.setId(itemId);
+        oldItem.setCampaignId(campaignId);
+        oldItem.setName("old");
+        oldItem.setProbability(5000000);
+        oldItem.setTotalStock(1500L);
+        oldItem.setTotalStock(500L);
+
+        // 2. 設定 Mock 行為
+        when(itemRepository.findById(any(Long.class))).thenReturn(Optional.of(oldItem));
+
+        // 模擬 Repository 儲存物件
+        when(itemRepository.save(any(Item.class)))
+                .thenAnswer(invocation -> {
+                    return invocation.getArgument(0);
+                });
+
+        // 3. 執行測試
+        Item result = itemService.updateItem(itemId, input);
+
+        // 4. 驗證結果
+        assertNotNull(result);
+        assertEquals(itemId, result.getId());
+        assertEquals(campaignId, result.getCampaignId());
+        assertEquals(input.getName(), result.getName());
+        assertEquals(input.getProbability(), result.getProbability());
+        assertEquals(oldItem.getTotalStock(), result.getTotalStock());
+        assertEquals(oldItem.getCurrentStock(), result.getCurrentStock());
+
+        // 5. 驗證互動
+        // 確認資料庫有存檔
+        verify(itemRepository, times(1)).save(any(Item.class));
+    }
+
+    @Test
+    void updateItemWithProbabilityFull() {
+        // 1. 準備測試數據
+        Long itemId = 123L;
+        Long campaignId = 456L;
+        UpdateItemRequest input = new UpdateItemRequest();
+        input.setName("test");
+        input.setProbability(55000000);
+
+        Item oldItem = new Item();
+        oldItem.setId(itemId);
+        oldItem.setCampaignId(campaignId);
+        oldItem.setName("old");
+        oldItem.setProbability(5000000);
+        oldItem.setTotalStock(1500L);
+        oldItem.setTotalStock(500L);
+
+        // 模擬資料庫中已存在兩個獎品，加總機率為 50%
+        Integer totalProbability = 50000000;
+
+        // 2. 模擬 Repository 行為
+        // 2. 設定 Mock 行為
+        when(itemRepository.findById(any(Long.class))).thenReturn(Optional.of(oldItem));
+        when(itemRepository.sumProbabilityByCampaignId(campaignId)).thenReturn(totalProbability);
+        when(itemRepository.save(any(Item.class)))
+                .thenAnswer(invocation -> {
+                    return invocation.getArgument(0);
+                });
+
+        // 3. 執行測試
+        Item result = itemService.updateItem(itemId, input);
+
+        // 4. 驗證結果
+        assertNotNull(result);
+        assertEquals(itemId, result.getId());
+        assertEquals(campaignId, result.getCampaignId());
+        assertEquals(input.getName(), result.getName());
+        assertEquals(input.getProbability(), result.getProbability());
+        assertEquals(oldItem.getTotalStock(), result.getTotalStock());
+        assertEquals(oldItem.getCurrentStock(), result.getCurrentStock());
+
+        // 5. 驗證互動
+        // 確認資料庫有存檔
+        verify(itemRepository, times(1)).save(any(Item.class));
+    }
+
+    @Test
+    void updateItemWithProbabilityExceeded() {
+        // 1. 準備測試數據
+        Long itemId = 123L;
+        Long campaignId = 456L;
+        UpdateItemRequest input = new UpdateItemRequest();
+        input.setName("test");
+        input.setProbability(55000000);
+
+        Item oldItem = new Item();
+        oldItem.setId(itemId);
+        oldItem.setCampaignId(campaignId);
+        oldItem.setName("old");
+        oldItem.setProbability(5000000);
+        oldItem.setTotalStock(1500L);
+        oldItem.setTotalStock(500L);
+
+        // 模擬資料庫中已存在兩個獎品，加總機率為 90%
+        Integer totalProbability = 90000000;
+
+        // 2. 模擬 Repository 行為
+        when(itemRepository.findById(any(Long.class))).thenReturn(Optional.of(oldItem));
+        when(itemRepository.sumProbabilityByCampaignId(campaignId)).thenReturn(totalProbability);
+
+        // 3. 執行測試
+        Exception exception = assertThrows(ProbabilityExceededException.class, () -> {
+            itemService.updateItem(itemId, input);
+        });
+
+        // 4. 驗證錯誤訊息
+        assertEquals("probability exceeded", exception.getMessage());
+
+        // 5. 驗證防護機制：因為機率爆了，save 方法「不應該」被呼叫
         verify(itemRepository, never()).save(any(Item.class));
     }
 }
