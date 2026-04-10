@@ -30,7 +30,7 @@ public class CampaignController {
 
     // 建立活動
     @PostMapping
-    public ResponseEntity<?> createCampagin(
+    public ResponseEntity<?> createCampaign(
             @RequestHeader(value = "Authorization") String token,
             @Valid @RequestBody CreateCampaignRequest req) {
         // 結束時間必須大於開始時間
@@ -52,6 +52,38 @@ public class CampaignController {
         try {
             Long campaignId = campaignService.createCampaign(req);
             return ResponseEntity.ok(Map.of("id", campaignId));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An internal server error occurred. Please contact the system administrator.");
+        }
+    }
+
+    // 修改活動
+    @PutMapping("/{campaign_id}")
+    public ResponseEntity<?> updateCampaign(
+            @RequestHeader(value = "Authorization") String token,
+            @PathVariable("campaign_id") Long campaignId,
+            @Valid @RequestBody UpdateCampaignRequest req) {
+        // 結束時間必須大於開始時間
+        if (req.getEndTime() <= req.getStartTime()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("start_time must before end_time");
+        }
+
+        // 檢查 Token 有效性
+        if (!authService.isTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non-existent token or token out of date");
+        }
+
+        // 檢查是否有管理員權限
+        if (!authService.isAdmin(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("not admin role");
+        }
+
+        // 執行業務邏輯
+        try {
+            campaignService.updateCampaign(campaignId, req);
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

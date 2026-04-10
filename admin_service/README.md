@@ -26,20 +26,19 @@ API Spec:
       1. endpoint : /api/v1/admin/campaign/{campaign_id}
       2. method : PUT
       3. header : Authorization (string, required)
-      4. parameters : need one of following parameters
+      4. required parameters :
          1. name (string)
          2. max_tries (int)
          3. start_time (long) - timestamp (millisecond)
          4. end_time (long) - timestamp (millisecond)
       5. response :
          1. modify campaign success : Http code 200
-         2. missing token : Http code 400
-         3. no any parameter : Http code 400
-         4. max_tries <0 : Http code 400
-         5. end_time before start_time : Http code 400
-         6. non-existent token or token out of date : Http code 401
-         7. not admin token : Http code 403
-         8. non-existent campaign id : Http code 404
+         2. missing required parameters or token : Http code 400
+         3. max_tries <0 : Http code 400
+         4. end_time before start_time : Http code 400
+         5. non-existent token or token out of date : Http code 401
+         6. not admin token : Http code 403
+         7. non-existent campaign id : Http code 404
    3. 查詢活動
       1. endpoint : /api/v1/admin/campaign/{campaign_id}
       2. method : GET

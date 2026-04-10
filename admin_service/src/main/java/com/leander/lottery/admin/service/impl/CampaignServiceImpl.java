@@ -41,6 +41,23 @@ public class CampaignServiceImpl implements CampaignService {
         return saved.getId();
     }
 
+    @Transactional
+    public void updateCampaign(Long campaignId, UpdateCampaignRequest req) {
+        // find campaign from MySQL
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new ResourceNotFoundException("no this campaign"));
+
+        // 寫入 MySQL
+        campaign.setName(req.getName());
+        campaign.setMaxTries(req.getMaxTries());
+        campaign.setStartTime(req.getStartTime());
+        campaign.setEndTime(req.getEndTime());
+
+        Campaign saved = campaignRepository.save(campaign);
+
+        // 同步至 Redis
+        syncCampaignToRedis(saved);}
+
     private void syncCampaignToRedis(Campaign campaign) {
         String campaignKey = campaignKeyPrefix + campaign.getId();
         redisTemplate.opsForValue().set(campaignKey, campaign);
