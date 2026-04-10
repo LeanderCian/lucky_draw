@@ -1,4 +1,4 @@
-package com.leander.lottery.auth.entity;
+package com.leander.lottery.admin.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

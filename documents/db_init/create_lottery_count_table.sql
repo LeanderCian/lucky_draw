@@ -1,4 +1,4 @@
-CREATE TABLE `campaign_user_mapping` (
+CREATE TABLE `lottery_count` (
     `campaign_id` BIGINT NOT NULL COMMENT '活動 ID',
     `user_id` BIGINT NOT NULL COMMENT '使用者 ID',
     `total_lottery_count` INT NOT NULL DEFAULT 0 COMMENT '該使用者獲得的總抽獎機會次數',

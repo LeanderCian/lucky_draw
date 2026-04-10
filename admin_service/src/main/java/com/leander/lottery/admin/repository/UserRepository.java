@@ -1,6 +1,6 @@
-package com.leander.lottery.auth.repository;
+package com.leander.lottery.admin.repository;
 
-import com.leander.lottery.auth.entity.User;
+import com.leander.lottery.admin.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -26,7 +26,7 @@
             * email (string)
             * created_at (datetime)
             * updated_at (datetime)
-        * campaign_user_mapping
+        * lottery_count
             * campaign_id (long)
             * user_id (long)
             * total_lottery_count(int)

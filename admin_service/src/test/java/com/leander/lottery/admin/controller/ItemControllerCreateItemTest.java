@@ -178,14 +178,15 @@ public class ItemControllerCreateItemTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
     void campaignNotFound() throws Exception {
         when(itemService.createItem(any()))
                 .thenThrow(new ResourceNotFoundException("no this campaign"));
         when(authService.isTokenValid(any())).thenReturn(true);
         when(authService.isAdmin(any())).thenReturn(true);
 
-        mockMvc.perform(post("/api/v1/admin/campaign")
-                        .header("Authorization", "general-user-token")
+        mockMvc.perform(post("/api/v1/admin/item")
+                        .header("Authorization", adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound());
