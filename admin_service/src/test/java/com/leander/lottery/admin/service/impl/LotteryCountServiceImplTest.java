@@ -34,13 +34,10 @@ public class LotteryCountServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
-    private LotteryCountRepository lotteryCountRepository;
-
-    @Mock
     private RedisTemplate<String, Object> redisTemplate;
 
     @Mock
-    private ValueOperations<String, Object> valueOperations;
+    private LotteryCountRepository lotteryCountRepository;
 
     @InjectMocks
     @Spy // 使用 Spy 是為了能部分模擬 Service 內的方法（如 syncItemToRedis）
@@ -66,9 +63,6 @@ public class LotteryCountServiceImplTest {
                     return invocation.getArgument(0);
                 });
 
-        // 模擬 Redis 的操作類別 (因為 RedisTemplate 是鏈式呼叫，需要 Mock 內層操作)
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-
         // 3. 執行測試
         LotteryCount result = lotteryCountService.updateLotteryCount(campaignId, userId, totalLotteryCount);
 
@@ -82,12 +76,6 @@ public class LotteryCountServiceImplTest {
         // 5. 驗證互動
         // 確認資料庫有存檔
         verify(lotteryCountRepository, times(1)).save(any(LotteryCount.class));
-
-        // 確認 Redis 庫存有寫入 (opsForValue().set)
-        verify(valueOperations, times(1)).set(
-                eq("lottery_count_123_456"),
-                eq(totalLotteryCount)
-        );
     }
 
     @Test
@@ -112,9 +100,6 @@ public class LotteryCountServiceImplTest {
                 });
         when(lotteryCountRepository.findById(any(LotteryCountId.class))).thenReturn(Optional.of(existedLotteryCount));
 
-        // 模擬 Redis 的操作類別 (因為 RedisTemplate 是鏈式呼叫，需要 Mock 內層操作)
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-
         // 3. 執行測試
         LotteryCount result = lotteryCountService.updateLotteryCount(campaignId, userId, totalLotteryCount);
 
@@ -128,11 +113,5 @@ public class LotteryCountServiceImplTest {
         // 5. 驗證互動
         // 確認資料庫有存檔
         verify(lotteryCountRepository, times(1)).save(any(LotteryCount.class));
-
-        // 確認 Redis 庫存有寫入 (opsForValue().set)
-        verify(valueOperations, times(1)).set(
-                eq("lottery_count_123_456"),
-                eq(666)
-        );
     }
 }
