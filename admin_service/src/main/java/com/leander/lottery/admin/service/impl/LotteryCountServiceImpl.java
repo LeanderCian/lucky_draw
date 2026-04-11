@@ -36,7 +36,7 @@ public class LotteryCountServiceImpl implements LotteryCountService {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public LotteryCount updateLotteryCount(Long campaignId, Long userId, Integer totalLotteryCount) {
         // 檢查活動是否存在
         if (!campaignRepository.existsById(campaignId)) {
@@ -73,6 +73,7 @@ public class LotteryCountServiceImpl implements LotteryCountService {
         redisTemplate.opsForValue().set(lotteryCountKey, lotteryCount.getRemainingLotteryCount());
     }
 
+    @Transactional(readOnly = true)
     public LotteryCountResponse getLotteryCount(Long campaignId) {
         // 檢查活動是否存在
         if (!campaignRepository.existsById(campaignId)) {

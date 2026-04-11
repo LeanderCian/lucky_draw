@@ -3,8 +3,10 @@ package com.leander.lottery.admin.controller;
 import com.leander.lottery.admin.dto.CreateItemRequest;
 import com.leander.lottery.admin.dto.ItemResponse;
 import com.leander.lottery.admin.dto.UpdateItemRequest;
+import com.leander.lottery.admin.dto.UpdateItemStockRequest;
 import com.leander.lottery.admin.exception.ProbabilityExceededException;
 import com.leander.lottery.admin.exception.ResourceNotFoundException;
+import com.leander.lottery.admin.exception.StockNotEnoughException;
 import com.leander.lottery.admin.service.AuthService;
 import com.leander.lottery.admin.service.ItemService;
 import jakarta.validation.Valid;
@@ -83,6 +85,44 @@ public class ItemController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
         } catch(ProbabilityExceededException e) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
+                    .body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An internal server error occurred. Please contact the system administrator.");
+        }
+    }
+
+    // 補充庫存
+    @PatchMapping("/{item_id}")
+    public ResponseEntity<?> updateItemStock(
+            @RequestHeader(value = "Authorization") String token,
+            @PathVariable("item_id") Long itemId,
+            @Valid @RequestBody UpdateItemStockRequest req) {
+        // increment_amount 不能為0
+        if(req.getIncrementAmount() == 0 ){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("increment_amount can't be 0");
+        }
+
+        // 檢查 Token 有效性
+        if (!authService.isTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non-existent token or token out of date");
+        }
+
+        // 檢查是否有管理員權限
+        if (!authService.isAdmin(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("not admin role");
+        }
+
+        // 執行業務邏輯
+        try {
+            itemService.updateItemStock(itemId, req.getIncrementAmount());
+        return ResponseEntity.ok().build();
+        } catch(ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        } catch(StockNotEnoughException e) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
                     .body(e.getMessage());
         } catch (Exception e) {

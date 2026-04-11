@@ -34,7 +34,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Long registerUser(RegisterRequest regRequest) throws DuplicateUserException {
         // 1. 檢查帳號或 Email 是否重複
         if (userRepository.existsByName(regRequest.getName()) ||

@@ -2,9 +2,11 @@ package com.leander.lottery.admin.service.impl;
 
 import com.leander.lottery.admin.dto.CreateItemRequest;
 import com.leander.lottery.admin.dto.UpdateItemRequest;
+import com.leander.lottery.admin.dto.UpdateItemStockRequest;
 import com.leander.lottery.admin.entity.Campaign;
 import com.leander.lottery.admin.entity.Item;
 import com.leander.lottery.admin.exception.ProbabilityExceededException;
+import com.leander.lottery.admin.exception.StockNotEnoughException;
 import com.leander.lottery.admin.repository.CampaignRepository;
 import com.leander.lottery.admin.repository.ItemRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
@@ -161,7 +164,7 @@ public class ItemServiceImplTest {
         oldItem.setName("old");
         oldItem.setProbability(5000000);
         oldItem.setTotalStock(1500L);
-        oldItem.setTotalStock(500L);
+        oldItem.setCurrentStock(500L);
 
         // 2. 設定 Mock 行為
         when(itemRepository.findById(any(Long.class))).thenReturn(Optional.of(oldItem));
@@ -204,7 +207,7 @@ public class ItemServiceImplTest {
         oldItem.setName("old");
         oldItem.setProbability(5000000);
         oldItem.setTotalStock(1500L);
-        oldItem.setTotalStock(500L);
+        oldItem.setCurrentStock(500L);
 
         // 模擬資料庫中已存在兩個獎品，加總機率為 50%
         Integer totalProbability = 50000000;
@@ -250,7 +253,7 @@ public class ItemServiceImplTest {
         oldItem.setName("old");
         oldItem.setProbability(5000000);
         oldItem.setTotalStock(1500L);
-        oldItem.setTotalStock(500L);
+        oldItem.setCurrentStock(500L);
 
         // 模擬資料庫中已存在兩個獎品，加總機率為 90%
         Integer totalProbability = 90000000;
@@ -269,5 +272,145 @@ public class ItemServiceImplTest {
 
         // 5. 驗證防護機制：因為機率爆了，save 方法「不應該」被呼叫
         verify(itemRepository, never()).save(any(Item.class));
+    }
+
+    @Test
+    void shouldUpdateItemStockSuccessfully() {
+        // 1. 準備測試數據
+        Long itemId = 123L;
+        Long campaignId = 456L;
+        UpdateItemStockRequest input = new UpdateItemStockRequest();
+        input.setIncrementAmount(111L);
+
+        Item oldItem = new Item();
+        oldItem.setId(itemId);
+        oldItem.setCampaignId(campaignId);
+        oldItem.setName("item1");
+        oldItem.setProbability(5000000);
+        oldItem.setTotalStock(1500L);
+        oldItem.setCurrentStock(500L);
+
+        // 2. 設定 Mock 行為
+        when(itemRepository.findById(any(Long.class))).thenReturn(Optional.of(oldItem));
+
+        // 模擬 Repository 儲存物件
+        when(itemRepository.save(any(Item.class)))
+                .thenAnswer(invocation -> {
+                    return invocation.getArgument(0);
+                });
+
+        // 模擬 Redis 的操作類別 (因為 RedisTemplate 是鏈式呼叫，需要 Mock 內層操作)
+        when(redisTemplate.execute(
+                any(RedisScript.class), // 匹配任何 Redis 腳本
+                anyList(),              // 匹配任何 KEYS 列表
+                any(),                  // 匹配任何可變參數 (ARGV1)
+                any()                   // 匹配任何可變參數 (ARGV2)
+        )).thenReturn(611L);
+
+
+        // 3. 執行測試
+        Item result = itemService.updateItemStock(itemId, input.getIncrementAmount());
+
+        // 4. 驗證結果
+        assertNotNull(result);
+        assertEquals(itemId, result.getId());
+        assertEquals(campaignId, result.getCampaignId());
+        assertEquals(oldItem.getName(), result.getName());
+        assertEquals(oldItem.getProbability(), result.getProbability());
+        assertEquals(1611L, result.getTotalStock());
+        assertEquals(611L, result.getCurrentStock());
+
+        // 5. 驗證互動
+        // 確認資料庫有存檔
+        verify(itemRepository, times(1)).save(any(Item.class));
+    }
+
+    @Test
+    void updateItemWithStockBeZero() {
+        // 1. 準備測試數據
+        Long itemId = 123L;
+        Long campaignId = 456L;
+        UpdateItemStockRequest input = new UpdateItemStockRequest();
+        input.setIncrementAmount(-500L);
+
+        Item oldItem = new Item();
+        oldItem.setId(itemId);
+        oldItem.setCampaignId(campaignId);
+        oldItem.setName("item1");
+        oldItem.setProbability(5000000);
+        oldItem.setTotalStock(1500L);
+        oldItem.setCurrentStock(500L);
+
+        // 2. 設定 Mock 行為
+        when(itemRepository.findById(any(Long.class))).thenReturn(Optional.of(oldItem));
+        when(itemRepository.save(any(Item.class)))
+                .thenAnswer(invocation -> {
+                    return invocation.getArgument(0);
+                });
+
+        // 模擬 Redis 的操作類別 (因為 RedisTemplate 是鏈式呼叫，需要 Mock 內層操作)
+        when(redisTemplate.execute(
+                any(RedisScript.class), // 匹配任何 Redis 腳本
+                anyList(),              // 匹配任何 KEYS 列表
+                any(),                  // 匹配任何可變參數 (ARGV1)
+                any()                   // 匹配任何可變參數 (ARGV2)
+        )).thenReturn(-0L);
+
+        // 3. 執行測試
+        Item result = itemService.updateItemStock(itemId, input.getIncrementAmount());
+
+        // 4. 驗證結果
+        assertNotNull(result);
+        assertEquals(itemId, result.getId());
+        assertEquals(campaignId, result.getCampaignId());
+        assertEquals(oldItem.getName(), result.getName());
+        assertEquals(oldItem.getProbability(), result.getProbability());
+        assertEquals(1000L, result.getTotalStock());
+        assertEquals(0L, result.getCurrentStock());
+
+        // 5. 驗證互動
+        // 確認資料庫有存檔
+        verify(itemRepository, times(1)).save(any(Item.class));
+    }
+
+    @Test
+    void updateItemWithStockNotEnough() {
+        // 1. 準備測試數據
+        Long itemId = 123L;
+        Long campaignId = 456L;
+        UpdateItemStockRequest input = new UpdateItemStockRequest();
+        input.setIncrementAmount(-600L);
+
+        Item oldItem = new Item();
+        oldItem.setId(itemId);
+        oldItem.setCampaignId(campaignId);
+        oldItem.setName("item1");
+        oldItem.setProbability(5000000);
+        oldItem.setTotalStock(1500L);
+        oldItem.setCurrentStock(500L);
+
+        // // 2. 設定 Mock 行為
+        when(itemRepository.findById(any(Long.class))).thenReturn(Optional.of(oldItem));
+        when(itemRepository.save(any(Item.class)))
+                .thenAnswer(invocation -> {
+                    return invocation.getArgument(0);
+                });
+
+        // 模擬 Redis 的操作類別 (因為 RedisTemplate 是鏈式呼叫，需要 Mock 內層操作)
+        when(redisTemplate.execute(
+                any(RedisScript.class), // 匹配任何 Redis 腳本
+                anyList(),              // 匹配任何 KEYS 列表
+                any(),                  // 匹配任何可變參數 (ARGV1)
+                any()                   // 匹配任何可變參數 (ARGV2)
+        )).thenReturn(-1L);
+
+
+        // 3. 執行測試
+        Exception exception = assertThrows(StockNotEnoughException.class, () -> {
+            itemService.updateItemStock(itemId, input.getIncrementAmount());
+        });
+
+        // 4. 驗證錯誤訊息
+        assertEquals("item stock is not enough", exception.getMessage());
     }
 }

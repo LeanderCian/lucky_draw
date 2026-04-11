@@ -4,10 +4,12 @@ import com.leander.lottery.admin.dto.*;
 import com.leander.lottery.admin.entity.Item;
 import com.leander.lottery.admin.exception.ProbabilityExceededException;
 import com.leander.lottery.admin.exception.ResourceNotFoundException;
+import com.leander.lottery.admin.exception.StockNotEnoughException;
 import com.leander.lottery.admin.repository.CampaignRepository;
 import com.leander.lottery.admin.repository.ItemRepository;
 import com.leander.lottery.admin.service.ItemService;
 import com.leander.lottery.admin.util.LuaUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 public class ItemServiceImpl implements ItemService {
 
@@ -36,7 +39,7 @@ public class ItemServiceImpl implements ItemService {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Long createItem(CreateItemRequest req) {
         //  檢查活動是否存在
         if (!campaignRepository.existsById(req.getCampaignId())) {
@@ -65,7 +68,7 @@ public class ItemServiceImpl implements ItemService {
         return saved.getId();
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Item updateItem(Long itemId, UpdateItemRequest req) {
         // find item from MySQL
         Item item = itemRepository.findById(itemId)
@@ -99,7 +102,7 @@ public class ItemServiceImpl implements ItemService {
         keys.add(itemHashKey);
 
         // 準備腳本執行器
-        DefaultRedisScript<Boolean> script = new DefaultRedisScript<>(LuaUtils.INSERT_ITEM_LUA, Boolean.class);
+        DefaultRedisScript<Boolean> script = new DefaultRedisScript<>(LuaUtils.SYNC_ITEM_TO_REDIS_LUA, Boolean.class);
 
         // 執行腳本
         try {
@@ -115,6 +118,60 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public Item updateItemStock(Long itemId, Long incrementAmount) {
+        // find item from MySQL
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("no this item"));
+
+        // 寫入 MySQL
+        item.setTotalStock(item.getTotalStock() + incrementAmount);
+        item.setCurrentStock(item.getCurrentStock() + incrementAmount);
+
+        Item saved = itemRepository.save(item);
+
+        // 同步至 Redis
+        syncItemStockToRedis(saved, incrementAmount);
+
+        return saved;
+    }
+
+    private void syncItemStockToRedis(Item item, Long incrementAmount) {
+        String campaignItemListKey = campaignItemListKeyPrefix + item.getCampaignId();
+        String itemStockKey = itemStockKeyPrefix + item.getId();
+        String itemHashKey = item.getId().toString();
+        List<String> keys = new ArrayList<>();
+        keys.add(itemStockKey);
+        keys.add(campaignItemListKey);
+        keys.add(itemHashKey);
+
+        // 準備腳本執行器
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>(LuaUtils.SYNC_ITEM_STOCK_TO_REDIS_LUA, Long.class);
+
+        log.info("totalStock:" + item.getTotalStock());
+        log.info("incrementAmount:" + incrementAmount);
+
+        // 執行腳本
+        try {
+            Long result = redisTemplate.execute(
+                    script,
+                    keys,
+                    item.getTotalStock(),
+                    incrementAmount
+            );
+
+            if (result < 0) {
+                throw new StockNotEnoughException("item stock is not enough");
+            }
+        } catch (StockNotEnoughException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("insert item to Redis failed", e);
+        }
+    }
+
+    @Transactional(readOnly = true)
     public ItemResponse getItemById(Long id) {
         Item item = itemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("no this item"));

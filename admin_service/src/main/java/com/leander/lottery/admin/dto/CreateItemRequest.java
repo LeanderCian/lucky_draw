@@ -20,7 +20,7 @@ public class CreateItemRequest {
     @Min(0)
     @Max(100000000)
     private Integer probability;
-    @NotNull
+    @NotNull(message = "Total stock is required")
     @Min(0)
     @JsonProperty("total_stock")
     Long totalStock;

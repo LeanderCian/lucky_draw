@@ -106,7 +106,7 @@ API Spec:
          3. non-existent token or token out of date : Http code 401
          4. not admin token : Http code 403
          5. probability <= 0% : Http code 400
-         6. probability over 100% : Http code 422
+         6. probability over 100% after update : Http code 422
          7. non-existent item id : Http code 404
    3. 補充庫存
       1. endpoint : /api/v1/admin/item/{item_id}
@@ -116,11 +116,11 @@ API Spec:
          1. increment_amount (long)
       5. response :
          1. modify item success : Http code 200
-         2. increment_amount <= 0 : Http code 400
-         3. missing required parameters or token: Http code 400
-         4. non-existent token or token out of date : Http code 401
-         5. not admin token : Http code 403
-         6. non-existent item id : Http code 404
+         2. missing required parameters or token: Http code 400
+         3. non-existent token or token out of date : Http code 401
+         4. not admin token : Http code 403
+         5. non-existent item id : Http code 404
+         6. stock <0 after update : Http code 422
    4. 查詢獎品
       1. endpoint : /api/v1/admin/item/{id}
       2. method : GET

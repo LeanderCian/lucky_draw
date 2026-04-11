@@ -24,7 +24,7 @@ public class CampaignServiceImpl implements CampaignService {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Long createCampaign(CreateCampaignRequest req) {
         // 寫入 MySQL
         Campaign campaign = new Campaign();
@@ -41,7 +41,7 @@ public class CampaignServiceImpl implements CampaignService {
         return saved.getId();
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Campaign updateCampaign(Long campaignId, UpdateCampaignRequest req) {
         // find campaign from MySQL
         Campaign campaign = campaignRepository.findById(campaignId)
@@ -66,6 +66,7 @@ public class CampaignServiceImpl implements CampaignService {
         redisTemplate.opsForValue().set(campaignKey, campaign);
     }
 
+    @Transactional(readOnly = true)
     public CampaignResponse getCampaignById(Long id) {
         Campaign campaign = campaignRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("no this campaign"));

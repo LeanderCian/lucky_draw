@@ -10,5 +10,7 @@ public interface ItemService {
 
     public Item updateItem(Long itemId, UpdateItemRequest req);
 
+    public Item updateItemStock(Long itemId, Long incrementAmount);
+
     public ItemResponse getItemById(Long id);
 }
