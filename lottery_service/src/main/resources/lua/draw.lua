@@ -39,6 +39,8 @@ for i = 1, drawCount do
             if tonumber(item.currentStock) > 0 then
                 winItem = item
                 break
+            else
+                break
             end
         end
     end
