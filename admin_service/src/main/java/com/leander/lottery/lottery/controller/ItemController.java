@@ -1,0 +1,164 @@
+package com.leander.lottery.lottery.controller;
+
+import com.leander.lottery.lottery.dto.CreateItemRequest;
+import com.leander.lottery.lottery.dto.ItemResponse;
+import com.leander.lottery.lottery.dto.UpdateItemRequest;
+import com.leander.lottery.lottery.dto.UpdateItemStockRequest;
+import com.leander.lottery.lottery.exception.ProbabilityExceededException;
+import com.leander.lottery.lottery.exception.ResourceNotFoundException;
+import com.leander.lottery.lottery.exception.StockNotEnoughException;
+import com.leander.lottery.lottery.service.AuthService;
+import com.leander.lottery.lottery.service.ItemService;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/v1/admin/item")
+public class ItemController {
+
+    @Autowired
+    private AuthService authService;
+
+    @Autowired
+    private ItemService itemService;
+
+    // 建立獎品
+    @PostMapping
+    public ResponseEntity<?> createItem(
+            @RequestHeader(value = "Authorization") String token,
+            @Valid @RequestBody CreateItemRequest req) {
+        // 檢查 Token 有效性
+        if (!authService.isTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non-existent token or token out of date");
+        }
+
+        // 檢查是否有管理員權限
+        if (!authService.isAdmin(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("not admin role");
+        }
+
+        // 執行業務邏輯
+        try {
+            Long itemId = itemService.createItem(req);
+            return ResponseEntity.ok(Map.of("id", itemId));
+        } catch(ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        } catch(ProbabilityExceededException e) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
+                    .body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An internal server error occurred. Please contact the system administrator.");
+        }
+    }
+
+    // 修改獎品
+    @PutMapping("/{item_id}")
+    public ResponseEntity<?> updateItem(
+            @RequestHeader(value = "Authorization") String token,
+            @PathVariable("item_id") Long itemId,
+            @Valid @RequestBody UpdateItemRequest req) {
+        // 檢查 Token 有效性
+        if (!authService.isTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non-existent token or token out of date");
+        }
+
+        // 檢查是否有管理員權限
+        if (!authService.isAdmin(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("not admin role");
+        }
+
+        // 執行業務邏輯
+        try {
+            itemService.updateItem(itemId, req);
+            return ResponseEntity.ok().build();
+        } catch(ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        } catch(ProbabilityExceededException e) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
+                    .body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An internal server error occurred. Please contact the system administrator.");
+        }
+    }
+
+    // 補充庫存
+    @PatchMapping("/{item_id}")
+    public ResponseEntity<?> updateItemStock(
+            @RequestHeader(value = "Authorization") String token,
+            @PathVariable("item_id") Long itemId,
+            @Valid @RequestBody UpdateItemStockRequest req) {
+        // increment_amount 不能為0
+        if(req.getIncrementAmount() == 0 ){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("increment_amount can't be 0");
+        }
+
+        // 檢查 Token 有效性
+        if (!authService.isTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non-existent token or token out of date");
+        }
+
+        // 檢查是否有管理員權限
+        if (!authService.isAdmin(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("not admin role");
+        }
+
+        // 執行業務邏輯
+        try {
+            itemService.updateItemStock(itemId, req.getIncrementAmount());
+        return ResponseEntity.ok().build();
+        } catch(ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        } catch(StockNotEnoughException e) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
+                    .body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An internal server error occurred. Please contact the system administrator.");
+        }
+    }
+
+    // 查詢獎品
+    @GetMapping("/{item_id}")
+    public ResponseEntity<?> getItem(
+            @RequestHeader("Authorization") String token,
+            @PathVariable("item_id") Long itemId) {
+
+        // 檢查 Token 有效性
+        if (!authService.isTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non-existent token or token out of date");
+        }
+
+        // 檢查是否有管理員權限
+        if (!authService.isAdmin(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("not admin role");
+        }
+
+        // 取得獎品資料
+        try {
+            ItemResponse response = itemService.getItemById(itemId);
+            return ResponseEntity.ok(response);
+        } catch(ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An internal server error occurred. Please contact the system administrator.");
+        }
+    }
+}

@@ -136,12 +136,6 @@ How to run:
 1. local run : mvn spring-boot:run
 2. run test case : mvn clean test
 
-To do:
-1. need api or other solution for sync mysql data into redis when redis restart.
-2. campaign need status column
-3. item need status column
-4. integration test case
-
 Note:
 在CI或CD使用對應環境的config
 1. 開發環境 - application_dev.properties

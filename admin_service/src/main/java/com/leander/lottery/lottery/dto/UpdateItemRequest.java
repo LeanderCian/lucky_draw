@@ -1,0 +1,19 @@
+package com.leander.lottery.lottery.dto;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class UpdateItemRequest {
+    @NotBlank(message = "Name is required")
+    private String name;
+    @NotNull(message = "Probability is required")
+    @Min(0)
+    @Max(100000000)
+    private Integer probability;
+}
