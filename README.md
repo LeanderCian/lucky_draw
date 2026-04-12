@@ -18,8 +18,7 @@ Todo:
 3. admin service
    1. need api or other solution for sync mysql data into redis when redis restart.
    2. need api for admin get lottery result
-   3need test case for check sync data to redis behavior
-4. lottery service
+  4. lottery service
    1. need api for user get remaining count
 5. record worker
    1. not implement yet
