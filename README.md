@@ -31,4 +31,4 @@ Todo:
       1. solution1 - send email
       2. solution2 - need other api service 
 
-note: please review data flow (documents/data_flow.png) first.
+note: please review data flow (documents/lottery_data_flow.png) first.
